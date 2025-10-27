@@ -1,0 +1,100 @@
+{
+  "components": {
+    "comp-load-data": {
+      "executorLabel": "exec-load-data",
+      "inputDefinitions": {
+        "parameters": {
+          "data_raw_path": {
+            "parameterType": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "df_test": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_train": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_val": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    }
+  },
+  "defaultPipelineRoot": "gs://the_chustomer_churn/dataset/pipelines/",
+  "deploymentSpec": {
+    "executors": {
+      "exec-load-data": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "load_data"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef load_data(data_raw_path: str,\n              df_train: Output[Dataset],\n              df_test: Output[Dataset],\n              df_val: Output[Dataset]):\n\n    import pandas as pd\n    from sklearn.model_selection import train_test_split\n\n    # VARIABLES\n    TEST_SIZE = 0.15  # 15% para teste\n    VAL_SIZE = 0.15   # 15% para valida\u00e7\u00e3o\n    TARGET_COLUMN = 'Churn'\n\n    # LEITURA\n    dataset = pd.read_csv(f\"gs://the_chustomer_churn/dataset/dataset.csv\")\n\n\n    train_val_df, test_df = train_test_split(\n        dataset,\n        test_size=TEST_SIZE,\n        random_state=42,\n        stratify=dataset[TARGET_COLUMN]\n    )\n\n\n    # Etapa 2: Separar o restante (85%) em Treino (70%) e Valida\u00e7\u00e3o (15%)\n    # Precisamos recalcular a propor\u00e7\u00e3o de valida\u00e7\u00e3o em rela\u00e7\u00e3o ao 'train_val_df'\n    # val_size_ratio = 15% / 85%\n    val_size_ratio = VAL_SIZE / (1 - TEST_SIZE)\n\n    train_df, val_df = train_test_split(\n        train_val_df,\n        test_size=val_size_ratio,\n        random_state=42,\n        stratify=train_val_df[TARGET_COLUMN] # Estratificar novamente\n    )\n\n\n    train_df.to_csv(df_train.path, index=False)\n    test_df.to_csv(df_test.path, index=False)\n    val_df.to_csv(df_val.path, index=False)\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "description": "Pipeline from customer dataset",
+    "name": "customer"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "load-data": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-load-data"
+          },
+          "inputs": {
+            "parameters": {
+              "data_raw_path": {
+                "componentInputParameter": "data_raw_path"
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "load-data"
+          }
+        }
+      }
+    },
+    "inputDefinitions": {
+      "parameters": {
+        "data_raw_path": {
+          "defaultValue": "gs://the_chustomer_churn/dataset/dataset.csv",
+          "isOptional": true,
+          "parameterType": "STRING"
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.14.6"
+}

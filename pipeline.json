@@ -1,0 +1,486 @@
+{
+  "components": {
+    "comp-load-data": {
+      "executorLabel": "exec-load-data",
+      "inputDefinitions": {
+        "parameters": {
+          "data_raw_path": {
+            "parameterType": "STRING"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "df_test": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_train": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_val": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "comp-preprocess-features": {
+      "executorLabel": "exec-preprocess-features",
+      "inputDefinitions": {
+        "artifacts": {
+          "df_test_csv": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_train_csv": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_val_csv": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "df_test_preprocessed": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_train_preprocessed": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_val_preprocessed": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "comp-train-model": {
+      "executorLabel": "exec-train-model",
+      "inputDefinitions": {
+        "artifacts": {
+          "x_train_processed": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "x_val_processed": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "y_train": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "y_val": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        },
+        "parameters": {
+          "eval_metric": {
+            "parameterType": "STRING"
+          },
+          "n_estimators": {
+            "parameterType": "NUMBER_INTEGER"
+          },
+          "objective": {
+            "parameterType": "STRING"
+          },
+          "random_state": {
+            "parameterType": "NUMBER_INTEGER"
+          },
+          "scale_pos_weight": {
+            "parameterType": "NUMBER_DOUBLE"
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "trained_model": {
+            "artifactType": {
+              "schemaTitle": "system.Model",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    },
+    "comp-transformers": {
+      "executorLabel": "exec-transformers",
+      "inputDefinitions": {
+        "artifacts": {
+          "df_test_csv": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_train_csv": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "df_val_csv": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      },
+      "outputDefinitions": {
+        "artifacts": {
+          "X_test_out": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "X_train_out": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "X_val_out": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "preprocessor_artifact": {
+            "artifactType": {
+              "schemaTitle": "system.Model",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "y_test_out": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "y_train_out": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          },
+          "y_val_out": {
+            "artifactType": {
+              "schemaTitle": "system.Dataset",
+              "schemaVersion": "0.0.1"
+            }
+          }
+        }
+      }
+    }
+  },
+  "defaultPipelineRoot": "gs://the_chustomer_churn/dataset/pipelines/",
+  "deploymentSpec": {
+    "executors": {
+      "exec-load-data": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "load_data"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn' 'fsspec' 'gcsfs'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef load_data(data_raw_path: str,\n              df_train: Output[Dataset],\n              df_test: Output[Dataset],\n              df_val: Output[Dataset]):\n\n    import pandas as pd\n    from sklearn.model_selection import train_test_split\n\n    # VARIABLES\n    TEST_SIZE = 0.15  # 15% para teste\n    VAL_SIZE = 0.15   # 15% para valida\u00e7\u00e3o\n    TARGET_COLUMN = 'Churn'\n\n    # LEITURA\n    dataset = pd.read_csv(f\"gs://the_chustomer_churn/dataset/dataset.csv\")\n\n\n    train_val_df, test_df = train_test_split(\n        dataset,\n        test_size=TEST_SIZE,\n        random_state=42,\n        stratify=dataset[TARGET_COLUMN]\n    )\n\n\n    # Etapa 2: Separar o restante (85%) em Treino (70%) e Valida\u00e7\u00e3o (15%)\n    # Precisamos recalcular a propor\u00e7\u00e3o de valida\u00e7\u00e3o em rela\u00e7\u00e3o ao 'train_val_df'\n    # val_size_ratio = 15% / 85%\n    val_size_ratio = VAL_SIZE / (1 - TEST_SIZE)\n\n    train_df, val_df = train_test_split(\n        train_val_df,\n        test_size=val_size_ratio,\n        random_state=42,\n        stratify=train_val_df[TARGET_COLUMN] # Estratificar novamente\n    )\n\n\n    train_df.to_csv(df_train.path, index=False)\n    test_df.to_csv(df_test.path, index=False)\n    val_df.to_csv(df_val.path, index=False)\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      },
+      "exec-preprocess-features": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "preprocess_features"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'google-cloud-aiplatform' 'pandas' 'scikit-learn' 'fsspec' 'gcsfs'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef preprocess_features(\n              df_train_csv: Input[Dataset],\n              df_test_csv: Input[Dataset],\n              df_val_csv: Input[Dataset],\n              df_train_preprocessed: Output[Dataset],\n              df_test_preprocessed: Output[Dataset],\n              df_val_preprocessed: Output[Dataset]\n              ):\n\n    import pandas as pd\n\n    def preprocess_features(df_input):\n        \"\"\"\n        Fun\u00e7\u00e3o de LIMPEZA: Corrige tipos, trata nulos e mapeia o alvo.\n        N\u00e3o faz 'fit' ou 'transform' (scaling ou encoding).\n        \"\"\"\n        # 1. Copiar o dataframe\n        df = df_input.copy()\n\n        # --- ETAPA 1: Corre\u00e7\u00e3o de Tipos e Nulos ---\n        print(f\"Limpando TotalCharges...\")\n        df['TotalCharges'] = pd.to_numeric(df['TotalCharges'], errors='coerce')\n        df['TotalCharges'].fillna(0, inplace=True)\n\n\n        # --- ETAPA 2: Mapeamento APENAS DA COLUNA-ALVO ---\n        # O 'y' (target) precisa ser uma coluna \u00fanica (0 ou 1)\n        if 'Churn' in df.columns:\n            print(f\"Mapeando coluna 'Churn' para 0/1...\")\n            df['Churn'] = df['Churn'].map({'Yes': 1, 'No': 0})\n\n\n        # --- ETAPA 3: Prepara\u00e7\u00e3o das Categ\u00f3ricas ---\n        # Apenas garante que SeniorCitizen seja 'str' para o OneHotEncoder\n        if 'SeniorCitizen' in df.columns:\n            df['SeniorCitizen'] = df['SeniorCitizen'].astype(str)\n\n\n        # --- ETAPA 4: Remo\u00e7\u00e3o de Colunas ---\n        if 'customerID' in df.columns:\n            df = df.drop(columns=['customerID'])\n\n        return df\n\n\n\n    df_train_raw = pd.read_csv(df_train_csv.path)\n    df_test_raw = pd.read_csv(df_test_csv.path)\n    df_val_raw = pd.read_csv(df_test_csv.path)\n\n\n    df_train = preprocess_features(df_train_raw)\n\n    print(\"Processando dataset de VALIDA\u00c7\u00c3O...\")\n    df_val = preprocess_features(df_val_raw)\n\n    print(\"Processando dataset de TESTE...\")\n    df_test = preprocess_features(df_test_raw)\n\n    df_train.to_csv(df_train_preprocessed.path, index=False)\n    df_test.to_csv(df_test_preprocessed.path, index=False)\n    df_val.to_csv(df_val_preprocessed.path, index=False)\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      },
+      "exec-train-model": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "train_model"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'pandas' 'scikit-learn' 'joblib' 'xgboost' 'fsspec' 'gcsfs'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef train_model(\n    x_train_processed: Input[Dataset],\n    y_train: Input[Dataset],\n    x_val_processed: Input[Dataset],\n    y_val: Input[Dataset],\n    scale_pos_weight: float,\n    n_estimators: int,\n    random_state: int,\n    eval_metric: str,\n    objective: str,\n    trained_model: Output[Model],\n):\n    import pandas as pd\n    import numpy as np\n    import joblib\n    import xgboost as xgb\n\n\n\n    # --- ler dados ---\n    X_train = pd.read_csv(x_train_processed.path)\n    y_train_s = pd.read_csv(y_train.path)\n    X_val = pd.read_csv(x_val_processed.path)\n    y_val_s = pd.read_csv(y_val.path)\n\n    # --- modelo ---\n    model = xgb.XGBClassifier(\n        objective=objective,\n        scale_pos_weight=scale_pos_weight,\n        random_state=random_state,\n        n_estimators=n_estimators,\n        eval_metric=eval_metric,\n        n_jobs=-1,\n        tree_method=\"hist\",\n    )\n\n    # --- treino (sem logs/plots) ---\n    model.fit(X_train, y_train_s, eval_set=[(X_val, y_val_s)], verbose=False)\n\n    # --- salvar ---\n    #joblib.dump(model, trained_model.path)\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      },
+      "exec-transformers": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "transformers"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'google-cloud-aiplatform' 'pandas' 'scikit-learn' 'fsspec' 'gcsfs'  &&  python3 -m pip install --quiet --no-warn-script-location 'kfp==2.14.6' '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef transformers(\n              # Entradas\n              df_train_csv: Input[Dataset],\n              df_test_csv: Input[Dataset],\n              df_val_csv: Input[Dataset],\n\n              # Sa\u00eddas\n              y_train_out: Output[Dataset],\n              X_train_out: Output[Dataset],\n              y_val_out: Output[Dataset],\n              X_val_out: Output[Dataset],\n              y_test_out: Output[Dataset],\n              X_test_out: Output[Dataset],\n\n              # Artifatos\n              preprocessor_artifact: Output[Model]\n              ):\n\n    from sklearn.preprocessing import OneHotEncoder, MinMaxScaler\n    from sklearn.compose import ColumnTransformer\n    import pandas as pd\n\n\n    df_train = pd.read_csv(df_train_csv.path)\n    df_test = pd.read_csv(df_test_csv.path)\n    df_val = pd.read_csv(df_test_csv.path)\n\n\n    y_train = df_train.pop('Churn')\n    y_val = df_val.pop('Churn')\n    y_test = df_test.pop('Churn')\n\n    # O que sobra em df_train, df_val, df_test \u00e9 o nosso X\n    X_train = df_train\n    X_val = df_val\n    X_test = df_test\n\n\n\n    # --- 3. Definir Colunas Num\u00e9ricas e Categ\u00f3ricas (para o Pipeline) ---\n\n    numeric_features = ['tenure', 'MonthlyCharges', 'TotalCharges']\n\n    categorical_features = [\n        'gender', 'SeniorCitizen', 'Partner', 'Dependents', \n        'PhoneService', 'MultipleLines', 'InternetService', \n        'OnlineSecurity', 'OnlineBackup', 'DeviceProtection', \n        'TechSupport', 'StreamingTV', 'StreamingMovies', \n        'Contract', 'PaperlessBilling', 'PaymentMethod'\n    ]\n\n    # --- 4. Criar o Preprocessor (O \"C\u00e9rebro\") ---\n\n    # Pipeline para features num\u00e9ricas\n    numeric_transformer = MinMaxScaler()\n\n    # Pipeline para features categ\u00f3ricas\n    categorical_transformer = OneHotEncoder(\n        drop='first',              \n        handle_unknown='ignore',   # Ignora categorias raras que apare\u00e7am no teste\n        sparse_output=False        \n    )\n\n    # Juntar tudo no ColumnTransformer\n    preprocessor = ColumnTransformer(\n        transformers=[\n            ('num', numeric_transformer, numeric_features),\n            ('cat', categorical_transformer, categorical_features)\n        ],\n        remainder='passthrough' \n    )\n\n\n    # --- 5. FIT (Aprender) e TRANSFORM (Aplicar) ---\n\n    # FIT (APRENDER) - SOMENTE COM X_train\n    print(\"\\n'Fitando' (aprendendo) o preprocessor com X_train...\")\n    preprocessor.fit(X_train)\n\n    # TRANSFORM (APLICAR) - Em todos os datasets\n    print(\"Transformando X_train...\")\n    X_train_processed = preprocessor.transform(X_train)\n\n    print(\"Transformando X_val...\")\n    X_val_processed = preprocessor.transform(X_val)\n\n    print(\"Transformando X_test...\")\n    X_test_processed = preprocessor.transform(X_test)\n\n    print(\"\\n\u2705 Processamento com Pipeline conclu\u00eddo com sucesso!\")\n    print(f\"Formato do X_train processado: {X_train_processed.shape}\")\n    print(f\"Formato do X_val processado: {X_val_processed.shape}\")\n    print(f\"Formato do X_test processado: {X_test_processed.shape}\")\n\n\n    # --- 4. SALVAR OS DADOS PROCESSADOS NAS SA\u00cdDAS ---\n    print(\"Salvando dados processados em CSV...\")\n    try:\n        col_names = preprocessor.get_feature_names_out()\n    except Exception:\n        # Fallback simples se get_feature_names_out falhar\n        col_names = [f\"feature_{i}\" for i in range(X_train_processed.shape[1])]\n\n    pd.DataFrame(X_train_processed, columns=col_names).to_csv(X_train_out.path, index=False)\n    pd.DataFrame(X_val_processed, columns=col_names).to_csv(X_val_out.path, index=False)\n    pd.DataFrame(X_test_processed, columns=col_names).to_csv(X_test_out.path, index=False)\n\n    y_train.to_csv(y_train_out.path, index=False)\n    y_val.to_csv(y_val_out.path, index=False)\n    y_test.to_csv(y_test_out.path, index=False)\n\n    print(\"\\n\u2705 Processamento e salvamento conclu\u00eddos!\")\n\n"
+          ],
+          "image": "python:3.9"
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "description": "Pipeline from customer dataset",
+    "name": "customer"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "load-data": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-load-data"
+          },
+          "inputs": {
+            "parameters": {
+              "data_raw_path": {
+                "componentInputParameter": "data_raw_path"
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "load-data"
+          }
+        },
+        "preprocess-features": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-preprocess-features"
+          },
+          "dependentTasks": [
+            "load-data"
+          ],
+          "inputs": {
+            "artifacts": {
+              "df_test_csv": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "df_test",
+                  "producerTask": "load-data"
+                }
+              },
+              "df_train_csv": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "df_train",
+                  "producerTask": "load-data"
+                }
+              },
+              "df_val_csv": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "df_val",
+                  "producerTask": "load-data"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "preprocess-features"
+          }
+        },
+        "train-model": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-train-model"
+          },
+          "dependentTasks": [
+            "transformers"
+          ],
+          "inputs": {
+            "artifacts": {
+              "x_train_processed": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "X_train_out",
+                  "producerTask": "transformers"
+                }
+              },
+              "x_val_processed": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "X_val_out",
+                  "producerTask": "transformers"
+                }
+              },
+              "y_train": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "y_train_out",
+                  "producerTask": "transformers"
+                }
+              },
+              "y_val": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "y_val_out",
+                  "producerTask": "transformers"
+                }
+              }
+            },
+            "parameters": {
+              "eval_metric": {
+                "runtimeValue": {
+                  "constant": "logloss"
+                }
+              },
+              "n_estimators": {
+                "componentInputParameter": "hp_n_estimators"
+              },
+              "objective": {
+                "runtimeValue": {
+                  "constant": "binary:logistic"
+                }
+              },
+              "random_state": {
+                "componentInputParameter": "hp_random_state"
+              },
+              "scale_pos_weight": {
+                "componentInputParameter": "hp_scale_pos_weight"
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "train-model"
+          }
+        },
+        "transformers": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-transformers"
+          },
+          "dependentTasks": [
+            "preprocess-features"
+          ],
+          "inputs": {
+            "artifacts": {
+              "df_test_csv": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "df_test_preprocessed",
+                  "producerTask": "preprocess-features"
+                }
+              },
+              "df_train_csv": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "df_train_preprocessed",
+                  "producerTask": "preprocess-features"
+                }
+              },
+              "df_val_csv": {
+                "taskOutputArtifact": {
+                  "outputArtifactKey": "df_val_preprocessed",
+                  "producerTask": "preprocess-features"
+                }
+              }
+            }
+          },
+          "taskInfo": {
+            "name": "transformers"
+          }
+        }
+      }
+    },
+    "inputDefinitions": {
+      "parameters": {
+        "data_raw_path": {
+          "defaultValue": "gs://the_chustomer_churn/dataset/dataset.csv",
+          "isOptional": true,
+          "parameterType": "STRING"
+        },
+        "hp_n_estimators": {
+          "defaultValue": 150.0,
+          "isOptional": true,
+          "parameterType": "NUMBER_INTEGER"
+        },
+        "hp_random_state": {
+          "defaultValue": 42.0,
+          "isOptional": true,
+          "parameterType": "NUMBER_INTEGER"
+        },
+        "hp_scale_pos_weight": {
+          "defaultValue": 3.0,
+          "isOptional": true,
+          "parameterType": "NUMBER_DOUBLE"
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.14.6"
+}
